@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Match Setup & Roster</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .setup-wrapper {
+      max-width: 850px;
+      margin: 1.5rem auto;
+      padding: 0 1rem;
+    }
+
+    .roster-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .roster-title {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #22c55e;
+      margin-bottom: 0.75rem;
+    }
+
+    .roster-input-group {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .roster-input-group input {
+      flex: 1;
+      padding: 0.65rem;
+      border-radius: 6px;
+      border: 1px solid #334155;
+      background: #0f172a;
+      color: #fff;
+    }
+
+    .action-btn {
+      padding: 0.65rem 1rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .add-btn { background: #22c55e; color: #052e16; }
+    .remove-btn { background: #ef4444; color: #fff; }
+
+    .player-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .player-chip {
+      background: #0f172a;
+      border: 1px solid #334155;
+      padding: 0.35rem 0.75rem;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #fff;
+    }
+
+    .player-chip button {
+      background: none;
+      border: none;
+      color: #ef4444;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .match-row {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      background: #1e293b;
+      padding: 0.85rem 1rem;
+      border-radius: 8px;
+      margin-bottom: 0.75rem;
+      border: 1px solid #2a354d;
+    }
+
+    .match-type-badge {
+      width: 100px;
+      font-weight: bold;
+      color: #38bdf8;
+      font-size: 0.9rem;
+    }
+
+    .match-row select, .match-row input {
+      flex: 1;
+      padding: 0.65rem;
+      border-radius: 6px;
+      border: 1px solid #334155;
+      background: #0f172a;
+      color: #fff;
+    }
+
+    .save-schedule-btn {
+      width: 100%;
+      padding: 0.85rem;
+      background: #22c55e;
+      color: #052e16;
+      border: none;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+<header class="app-header">
+  <nav class="top-nav">
+    <a href="match-setup.html" class="active">Setup</a>
+    <a href="index.html">Scoring</a>
+    <a href="stats.html">Stats</a>
+  </nav>
+  <h1>MATCH SETUP & ROSTER</h1>
+</header>
+
+<main class="setup-wrapper">
+  <!-- Team Roster Management -->
+  <section class="roster-card">
+    <div class="roster-title">Congress B Roster Management</div>
+    <div class="roster-input-group">
+      <input type="text" id="new-player-name" placeholder="Enter new player name..." />
+      <button class="action-btn add-btn" onclick="addPlayerToRoster()">Add Player</button>
+    </div>
+    <div id="player-chips-container" class="player-tags"></div>
+  </section>
+
+  <!-- Match Fixtures Setup -->
+  <section class="roster-card">
+    <div class="roster-title">Night Fixtures Setup (4 Singles, 2 Doubles, 1 Reserve)</div>
+    <div id="setup-schedule-list"></div>
+    <button class="save-schedule-btn" onclick="saveSchedule()">Save Schedule</button>
+  </section>
+</main>
+
+<script src="app.js"></script>
+<script>
+  var fixtureTypes = [
+    { title: "Singles 1", isDouble: false },
+    { title: "Singles 2", isDouble: false },
+    { title: "Singles 3", isDouble: false },
+    { title: "Singles 4", isDouble: false },
+    { title: "Doubles 1", isDouble: true },
+    { title: "Doubles 2", isDouble: true },
+    { title: "Reserve", isDouble: false }
+  ];
+
+  function getRoster() {
+    return JSON.parse(localStorage.getItem("congressPlayers") || "[]");
+  }
+
+  function renderRosterChips() {
+    var container = document.getElementById("player-chips-container");
+    if (!container) return;
+    container.innerHTML = "";
+    var roster = getRoster();
+
+    if (roster.length === 0) {
+      container.innerHTML = "<span style='color: #64748b;'>No players added to roster yet.</span>";
+      return;
+    }
+
+    roster.forEach(function(p, index) {
+      var chip = document.createElement("div");
+      chip.className = "player-chip";
+      chip.innerHTML = `<span>${p.name}</span> <button onclick="removePlayerFromRoster(${index})">✕</button>`;
+      container.appendChild(chip);
+    });
+  }
+
+  function addPlayerToRoster() {
+    var input = document.getElementById("new-player-name");
+    var name = input.value.trim();
+    if (!name) return;
+
+    var roster = getRoster();
+    if (!roster.some(function(p) { return p.name.toLowerCase() === name.toLowerCase(); })) {
+      roster.push({
+        name: name,
+        totalScore: 0,
+        dartsThrown: 0,
+        hundreds: 0,
+        oneForties: 0,
+        oneEighties: 0,
+        checkoutAttempts: 0,
+        checkoutsHit: 0,
+        legsWon: 0,
+        legsLost: 0
+      });
+      localStorage.setItem("congressPlayers", JSON.stringify(roster));
+      input.value = "";
+      renderRosterChips();
+      renderScheduleForm();
+    }
+  }
+
+  function removePlayerFromRoster(index) {
+    var roster = getRoster();
+    roster.splice(index, 1);
+    localStorage.setItem("congressPlayers", JSON.stringify(roster));
+    renderRosterChips();
+    renderScheduleForm();
+  }
+
+  function renderScheduleForm() {
+    var container = document.getElementById("setup-schedule-list");
+    if (!container) return;
+    container.innerHTML = "";
+
+    var savedSchedule = JSON.parse(localStorage.getItem("matchSchedule") || "[]");
+    var roster = getRoster();
+
+    fixtureTypes.forEach(function(fix, i) {
+      var matchData = savedSchedule[i] || { homePlayer: "", awayPlayer: "" };
+      var div = document.createElement("div");
+      div.className = "match-row";
+
+      var optionsHtml = '<option value="">Select Player...</option>';
+      roster.forEach(function(p) {
+        optionsHtml += '<option value="' + p.name + '">' + p.name + '</option>';
+      });
+
+      if (fix.isDouble) {
+        var existingPair = (matchData.homePlayer || "").split("&").map(function(s) { return s.trim(); });
+        var p1 = existingPair[0] || "";
+        var p2 = existingPair[1] || "";
+
+        div.innerHTML = `
+          <span class="match-type-badge">${fix.title}</span>
+          <select id="home-player-1-${i}">${optionsHtml}</select>
+          <select id="home-player-2-${i}">${optionsHtml}</select>
+          <input type="text" id="away-player-${i}" placeholder="Opponents" value="${matchData.awayPlayer || ''}" />
+        `;
+
+        container.appendChild(div);
+        if (p1) document.getElementById("home-player-1-" + i).value = p1;
+        if (p2) document.getElementById("home-player-2-" + i).value = p2;
+      } else {
+        div.innerHTML = `
+          <span class="match-type-badge">${fix.title}</span>
+          <select id="home-player-1-${i}">${optionsHtml}</select>
+          <input type="text" id="away-player-${i}" placeholder="Opponent Name" value="${matchData.awayPlayer || ''}" />
+        `;
+
+        container.appendChild(div);
+        if (matchData.homePlayer) document.getElementById("home-player-1-" + i).value = matchData.homePlayer;
+      }
+    });
+  }
+
+  function saveSchedule() {
+    var newSchedule = [];
+
+    fixtureTypes.forEach(function(fix, i) {
+      var p1Elem = document.getElementById("home-player-1-" + i);
+      var awayElem = document.getElementById("away-player-" + i);
+      
+      var p1 = p1Elem ? p1Elem.value : "";
+      var awayVal = awayElem ? awayElem.value : "";
+      var homeCombined = p1;
+
+      if (fix.isDouble) {
+        var p2Elem = document.getElementById("home-player-2-" + i);
+        var p2 = p2Elem ? p2Elem.value : "";
+        homeCombined = p1 && p2 ? p1 + " & " + p2 : (p1 || p2 || "Congress Pair");
+      }
+
+      newSchedule.push({
+        type: fix.title,
+        homePlayer: homeCombined || "Congress Player",
+        awayPlayer: awayVal || "Opponent"
+      });
+    });
+
+    localStorage.setItem("matchSchedule", JSON.stringify(newSchedule));
+    alert("Match Schedule Saved!");
+  }
+
+  document.addEventListener("DOMContentLoaded", function() {
+    renderRosterChips();
+    renderScheduleForm();
+  });
+</script>
+</body>
+</html>
